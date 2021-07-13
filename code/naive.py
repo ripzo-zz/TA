@@ -1,4 +1,5 @@
 from dataread import DataRead
+from tqdm import tqdm
 
 class Naive:
     def __init__(self, dataset_path):
@@ -6,7 +7,7 @@ class Naive:
         self.computing_data = []
         self.skybox = {}
         self.dimension = len(self.data[1][0].keys())-3
-        print(self.max_time)
+        pbar = tqdm(total=self.max_time+1)
         for i in range(self.max_time+1):
             if(i > 0):
                 self.skybox[i] = self.skybox[i-1].copy()
@@ -34,6 +35,8 @@ class Naive:
                         self.skybox[i][id] = 1
             except:
                 pass
+            pbar.update(1)
+        pbar.close()
 
     def get_current_sky(self, data):
         current_sky = []

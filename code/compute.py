@@ -36,10 +36,16 @@ while 1 :
   # result2 = naive.get_durable_data(time_start, time_end, thres)
   # result2 = sorted(result2, key=itemgetter('id')) 
 
+  tic = time.perf_counter()
   for event in result1:
       print (event)
-
+  toc = time.perf_counter()
+  print('Time query: '+str(toc-tic)+' s')
+  
   print('=============')
 
+  tic = time.perf_counter()
   for event in result2:
       print (event)
+  toc = time.perf_counter()
+  print('Time query: '+str(toc-tic)+' s')

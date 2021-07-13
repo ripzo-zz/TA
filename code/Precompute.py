@@ -1,13 +1,14 @@
 from datetime import time
 from grid import GridIndex
 from dataread import DataRead
+from tqdm import tqdm
 
 class Precompute:
     def __init__(self, grid_size, dataset_path):
         self.data, self.max_value, self.max_time, self.keys = DataRead(dataset_path)
         self.skybox = {}
         self.grid = GridIndex(grid_size, len(self.keys), self.max_value, self.keys)
-
+        pbar = tqdm(total=self.max_time+1)
         for i in range(self.max_time+1):
             if(i > 0):
                 self.skybox[i] = self.skybox[i-1].copy()
@@ -24,6 +25,8 @@ class Precompute:
                     self.skybox[i][id] += 1
                 except:
                     self.skybox[i][id] = 1
+            pbar.update(1)
+        pbar.close()
     
     def get_durable_data(self, time_start, time_end, minimum_percent):
         if time_end < 0:

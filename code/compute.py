@@ -1,0 +1,45 @@
+from Precompute import Precompute
+from naive import Naive
+import time
+from operator import itemgetter
+
+# tic = time.perf_counter()
+# naive = Naive('dataset/independent/d/random_50000_5d_ind.csv')
+# toc = time.perf_counter()
+# print('Time Naive: '+str(toc-tic)+' s')
+
+grid_size = 10
+tic = time.perf_counter()
+pre = Precompute(grid_size, 'dataset/independent/d/random_50000_5d_ind.csv')
+toc = time.perf_counter()
+print('Time Grid (size = '+str(grid_size)+'): '+str(toc-tic)+' s')
+
+# print(pre.skybox) 
+# print(naive.skybox)
+
+while 1 :
+  time_start = int(input('masukkan time awal : '))
+  if time_start == -1:
+    break
+  time_end = int(input('masukkan time akhir : '))
+  thres = int(input('masukkan threshold (%) : '))
+
+  thres = thres/100
+
+  # time_start = 0
+  # time_end = 1
+  # thres = 0.6
+
+  result1 = pre.get_durable_data(time_start, time_end, thres)
+  result1 = sorted(result1, key=itemgetter('id')) 
+
+  # result2 = naive.get_durable_data(time_start, time_end, thres)
+  # result2 = sorted(result2, key=itemgetter('id')) 
+
+  for event in result1:
+      print (event)
+
+  print('=============')
+
+  for event in result2:
+      print (event)

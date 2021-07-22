@@ -5,13 +5,13 @@ import os, psutil
 from operator import itemgetter
 
 tic = time.perf_counter()
-naive = Naive('dataset/independent/n/random_10000_3d_ind.csv')
+naive = Naive('dataset/independent/d/random_50000_2d_ind.csv')
 toc = time.perf_counter()
 print('Time Naive: '+str(toc-tic)+' s')
 
 grid_size = 10
 tic = time.perf_counter()
-pre = Precompute(grid_size, 'dataset/independent/n/random_10000_3d_ind.csv')
+pre = Precompute(grid_size, 'dataset/independent/d/random_50000_2d_ind.csv')
 toc = time.perf_counter()
 print('Time Grid (size = '+str(grid_size)+'): '+str(toc-tic)+' s')
 

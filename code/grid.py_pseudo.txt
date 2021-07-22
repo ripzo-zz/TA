@@ -1,0 +1,363 @@
+from operator IMPORT ge
+
+IMPORT re
+
+
+
+DEFINE CLASS GridIndex:
+
+    DEFINE FUNCTION __init__(self, grid_size, dimension, max_value, event_keys):
+
+        SET self.grid_size TO grid_size
+
+        SET self.dimension TO dimension
+
+        SET self.grid_length TO max_value / grid_size
+
+        SET self.amount_data TO 0
+
+        SET self.temp_maximum TO [] # use FOR update dominant grid IF deletion happen
+
+        SET self.temp_current_position TO [] # use FOR update dominant grid IF deletion happen
+
+        SET self.dominant_grid TO []
+
+        SET self.event_keys TO event_keys
+
+        SET self.grid TO {}
+
+
+
+        # make grid dictionary
+
+        FOR i IN range(grid_size ** dimension):
+
+            SET grid_key TO 'G'
+
+            FOR j IN range(dimension-1, -1, -1):
+
+                    SET number TO i//(grid_size**j)
+
+                    if(number >= grid_size):
+
+                        number %= grid_size
+
+                    grid_key += ' '+str(number)
+
+            SET self.grid[grid_key] TO {}
+
+            SET self.grid[grid_key]['member'] TO []
+
+            SET self.grid[grid_key]['flag'] TO 0
+
+    
+
+    # update grid per timestamp
+
+    DEFINE FUNCTION update(self, events):
+
+        FOR event IN events:
+
+            IF event['action'] EQUALS 1:
+
+                self.insertion(event)
+
+            ELSEIF event['action'] EQUALS 0:
+
+                self.deletion(event)
+
+
+
+    # insertion function
+
+    DEFINE FUNCTION insertion(self, event):
+
+        SET grid_key TO 'G'
+
+        FOR key IN event.keys():
+
+            IF key != 'id' and key != 'timestamp' and key != 'action':
+
+                SET axes TO int(event[key] // self.grid_length)
+
+                IF axes EQUALS self.grid_size:
+
+                    axes -= 1
+
+                grid_key += ' '+str(axes)
+
+        self.grid[grid_key]['member'].append(event)
+
+        self.amount_data += 1
+
+
+
+        # update dominant grid
+
+        IF self.amount_data EQUALS 1:
+
+            self.dominant_grid.append(grid_key)
+
+        ELSE:
+
+            SET current_g TO list(map(int, re.findall(r'\d+', grid_key)))
+
+            SET i TO 0
+
+            WHILE i < len(self.dominant_grid):
+
+                SET dominant_index_counter TO 0
+
+                SET same_index_counter TO 0
+
+                SET dominated_index_counter TO 0
+
+                SET dominant_g TO list(map(int, re.findall(r'\d+', self.dominant_grid[i])))
+
+                FOR j IN range(len(dominant_g)):
+
+                    IF current_g[j] < dominant_g[j]:
+
+                        dominant_index_counter += 1
+
+                    ELSEIF current_g[j] EQUALS dominant_g[j]:
+
+                        same_index_counter += 1
+
+                    ELSE:
+
+                        dominated_index_counter += 1
+
+                IF dominant_index_counter EQUALS self.dimension:
+
+                    self.dominant_grid.pop(i)
+
+                ELSEIF dominated_index_counter EQUALS self.dimension or same_index_counter EQUALS self.dimension:
+
+                    RETURN
+
+                ELSE:
+
+                    i += 1
+
+            self.dominant_grid.append(grid_key)
+
+
+
+    # deletion function
+
+    DEFINE FUNCTION deletion(self, event):
+
+        SET grid_key TO 'G'
+
+        FOR key IN event.keys():
+
+            IF key != 'id' and key != 'timestamp' and key != 'action':
+
+                SET axes TO int(event[key] // self.grid_length)
+
+                IF axes EQUALS self.grid_size:
+
+                    axes -= 1
+
+                grid_key += ' '+str(axes)
+
+        FOR i IN range(len(self.grid[grid_key]['member'])):
+
+            IF self.grid[grid_key]['member'][i]['id'] EQUALS event['id']:
+
+                self.grid[grid_key]['member'].pop(i)
+
+                self.amount_data -= 1
+
+                break
+
+
+
+        IF grid_key IN self.dominant_grid and len(self.grid[grid_key]['member']) EQUALS 0:
+
+            self.dominant_grid.remove(grid_key)
+
+            IF self.amount_data > len(self.dominant_grid):
+
+                SET current_position TO list(map(int, re.findall(r'\d+', grid_key)))
+
+                self.maximum_index_to_be_dominant(current_position)
+
+                self.search_dominant_grid(0, 'G')
+
+
+
+    DEFINE FUNCTION search_dominant_grid(self, index, parent_key):
+
+        SET current_position TO self.temp_current_position[index]
+
+        SET current_maximum TO self.temp_maximum[index]
+
+        WHILE current_position < current_maximum :
+
+            IF index EQUALS 0:
+
+                SET self.temp_current_position[0] TO current_position
+
+            SET current_key TO parent_key+' '+str(current_position)
+
+            IF self.dimension - index > 1:
+
+                self.search_dominant_grid(index+1, current_key)
+
+            ELSE:
+
+                IF len(self.grid[current_key]['member']) :
+
+                    SET current_g TO list(map(int, re.findall(r'\d+', current_key)))
+
+                    SET i TO 0
+
+                    WHILE i < len(self.dominant_grid):
+
+                        SET dominant_index_counter TO 0
+
+                        SET same_index_counter TO 0
+
+                        SET dominated_index_counter TO 0
+
+                        SET dominant_g TO list(map(int, re.findall(r'\d+', self.dominant_grid[i])))
+
+                        FOR j IN range(len(dominant_g)):
+
+                            IF current_g[j] < dominant_g[j]:
+
+                                dominant_index_counter += 1
+
+                            ELSEIF current_g[j] EQUALS dominant_g[j]:
+
+                                same_index_counter += 1
+
+                        IF dominant_index_counter EQUALS self.dimension:
+
+                            self.dominant_grid.pop(i)
+
+                        ELSEIF dominated_index_counter EQUALS self.dimension or same_index_counter EQUALS self.dimension:
+
+                            RETURN
+
+                        ELSE:
+
+                            i += 1
+
+                    self.dominant_grid.append(current_key)
+
+                    SET dif_index TO []
+
+                    FOR ind IN range(self.dimension):
+
+                        IF current_g[ind] != self.temp_current_position[ind]:
+
+                            dif_index.append(ind)
+
+                    IF len(dif_index) EQUALS 1:
+
+                            SET self.temp_maximum[j] TO current_g[j]+1
+
+            current_position += 1
+
+
+
+    DEFINE FUNCTION maximum_index_to_be_dominant(self, current_position):
+
+        SET self.temp_maximum TO []
+
+        SET self.temp_current_position TO []
+
+        FOR i IN range(self.dimension):
+
+            self.temp_maximum.append(self.grid_size)
+
+            self.temp_current_position.append(current_position[i]+1)
+
+    
+
+    DEFINE FUNCTION get_current_sky(self):
+
+        SET current_sky TO []
+
+        SET events TO self.get_all_grid_members()
+
+        FOR event IN events:
+
+            IF len(current_sky) > 0:
+
+                SET i TO 0
+
+                SET put TO 1
+
+                WHILE i < len(current_sky):
+
+                    IF event['id'] EQUALS current_sky[i]['id']:
+
+                        SET put TO 0
+
+                        break
+
+
+
+                    SET dominant_index_counter TO 0
+
+                    SET same_value_counter TO 0
+
+                    FOR j IN range(self.dimension):
+
+                        IF event[self.event_keys[j]] < current_sky[i][self.event_keys[j]]:
+
+                            dominant_index_counter += 1
+
+                        ELSEIF event[self.event_keys[j]] EQUALS current_sky[i][self.event_keys[j]]:
+
+                            same_value_counter += 1
+
+                    IF (dominant_index_counter + same_value_counter) EQUALS self.dimension and same_value_counter < self.dimension:
+
+                        current_sky.pop(i)
+
+                        i -= 1
+
+                    ELSEIF dominant_index_counter EQUALS 0 and same_value_counter != self.dimension:
+
+                        SET put TO 0
+
+                        break
+
+                    i += 1
+
+                IF put EQUALS 1:
+
+                    current_sky.append(event)
+
+            ELSE:
+
+                current_sky.append(event)
+
+        RETURN current_sky
+
+    
+
+    DEFINE FUNCTION get_all_grid_members(self):
+
+        SET members TO []
+
+        FOR grid_key IN self.dominant_grid:
+
+            FOR event IN self.grid[grid_key]['member']:
+
+                members.append(event)
+
+        RETURN members
+
+
+
+    DEFINE FUNCTION reset_flag(self):
+
+        FOR grid_key IN self.grid:
+
+            SET self.grid[grid_key]['flag'] TO 0

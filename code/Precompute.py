@@ -5,10 +5,12 @@ from tqdm import tqdm
 
 class Precompute:
     def __init__(self, grid_size, dataset_path):
-        self.data, self.max_value, self.max_time, self.keys = DataRead(dataset_path)
+        self.data, self.max_value, self.max_time, self.keys = DataRead(
+            dataset_path)
         self.skybox = {}
-        self.grid = GridIndex(grid_size, len(self.keys), self.max_value, self.keys)
-        pbar = tqdm(total=self.max_time+1)
+        self.grid = GridIndex(grid_size, len(
+            self.data[1][0].keys())-3, self.max_value, self.keys)
+
         for i in range(self.max_time+1):
             if(i > 0):
                 self.skybox[i] = self.skybox[i-1].copy()
@@ -25,9 +27,7 @@ class Precompute:
                     self.skybox[i][id] += 1
                 except:
                     self.skybox[i][id] = 1
-            pbar.update(1)
-        pbar.close()
-    
+
     def get_durable_data(self, time_start, time_end, minimum_percent):
         if time_end < 0:
             time_end = self.max_time
@@ -49,8 +49,8 @@ class Precompute:
         for k in temp_result:
             if (temp_result[k]/time_length) >= minimum_percent:
                 result.append({
-                    'id' : k,
-                    'kemunculan' : temp_result[k],
-                    'persentase_kemunculan' : "%.2f" % (temp_result[k]/time_length*100) + '%',
-                    })
+                    'id': k,
+                    'kemunculan': temp_result[k],
+                    'persentase_kemunculan': "%.2f" % (temp_result[k]/time_length*100) + '%',
+                })
         return result

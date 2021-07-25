@@ -10,7 +10,7 @@ class Precompute:
         self.skybox = {}
         self.grid = GridIndex(grid_size, len(
             self.data[1][0].keys())-3, self.max_value, self.keys)
-
+        pbar = tqdm(total=self.max_time+1)
         for i in range(self.max_time+1):
             if(i > 0):
                 self.skybox[i] = self.skybox[i-1].copy()
@@ -27,6 +27,8 @@ class Precompute:
                     self.skybox[i][id] += 1
                 except:
                     self.skybox[i][id] = 1
+            pbar.update(1)
+        pbar.close()
 
     def get_durable_data(self, time_start, time_end, minimum_percent):
         if time_end < 0:

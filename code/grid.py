@@ -1,5 +1,7 @@
 from operator import ge
 import re
+import queue
+import copy
 
 class GridIndex:
     def __init__(self, grid_size, dimension, max_value, event_keys):
@@ -7,8 +9,8 @@ class GridIndex:
         self.dimension = dimension
         self.grid_length = max_value / grid_size
         self.amount_data = 0
-        self.temp_maximum = [] # use for update dominant grid if deletion happen
-        self.temp_current_position = [] # use for update dominant grid if deletion happen
+        self.temp_maximum = []  # use for update dominant grid if deletion happen
+        self.temp_current_position = []  # use for update dominant grid if deletion happen
         self.dominant_grid = []
         self.event_keys = event_keys
         self.grid = {}
@@ -17,14 +19,14 @@ class GridIndex:
         for i in range(grid_size ** dimension):
             grid_key = 'G'
             for j in range(dimension-1, -1, -1):
-                    number = i//(grid_size**j)
-                    if(number >= grid_size):
-                        number %= grid_size
-                    grid_key += ' '+str(number)
+                number = i//(grid_size**j)
+                if(number >= grid_size):
+                    number %= grid_size
+                grid_key += ' '+str(number)
             self.grid[grid_key] = {}
             self.grid[grid_key]['member'] = []
             self.grid[grid_key]['flag'] = 0
-    
+
     # update grid per timestamp
     def update(self, events):
         for event in events:
@@ -55,7 +57,8 @@ class GridIndex:
                 dominant_index_counter = 0
                 same_index_counter = 0
                 dominated_index_counter = 0
-                dominant_g = list(map(int, re.findall(r'\d+', self.dominant_grid[i])))
+                dominant_g = list(
+                    map(int, re.findall(r'\d+', self.dominant_grid[i])))
                 for j in range(len(dominant_g)):
                     if current_g[j] < dominant_g[j]:
                         dominant_index_counter += 1
@@ -90,54 +93,57 @@ class GridIndex:
             self.dominant_grid.remove(grid_key)
             if self.amount_data > len(self.dominant_grid):
                 current_position = list(map(int, re.findall(r'\d+', grid_key)))
-                self.maximum_index_to_be_dominant(current_position)
-                self.search_dominant_grid(0, 'G')
+                self._search_dominant_grid(current_position)
 
-    def search_dominant_grid(self, index, parent_key):
-        current_position = self.temp_current_position[index]
-        current_maximum = self.temp_maximum[index]
-        while current_position < current_maximum :
-            if index == 0:
-                self.temp_current_position[0] = current_position
-            current_key = parent_key+' '+str(current_position)
-            if self.dimension - index > 1:
-                self.search_dominant_grid(index+1, current_key)
-            else:
-                if len(self.grid[current_key]['member']) :
-                    current_g = list(map(int, re.findall(r'\d+', current_key)))
-                    i = 0
-                    while i < len(self.dominant_grid):
-                        dominant_index_counter = 0
-                        same_index_counter = 0
-                        dominated_index_counter = 0
-                        dominant_g = list(map(int, re.findall(r'\d+', self.dominant_grid[i])))
-                        for j in range(len(dominant_g)):
-                            if current_g[j] < dominant_g[j]:
-                                dominant_index_counter += 1
-                            elif current_g[j] == dominant_g[j]:
-                                same_index_counter += 1
-                        if dominant_index_counter == self.dimension:
-                            self.dominant_grid.pop(i)
-                        elif dominated_index_counter == self.dimension or same_index_counter == self.dimension:
-                            return
-                        else:
-                            i += 1
-                    self.dominant_grid.append(current_key)
-                    dif_index = []
-                    for ind in range(self.dimension):
-                        if current_g[ind] != self.temp_current_position[ind]:
-                            dif_index.append(ind)
-                    if len(dif_index) == 1:
-                            self.temp_maximum[j] = current_g[j]+1
-            current_position += 1
+    def generate_key_from_position(self, position):
+        key = f"G {' '.join([str(n) for n in position])}"
+        return key
 
-    def maximum_index_to_be_dominant(self, current_position):
-        self.temp_maximum = []
-        self.temp_current_position = []
-        for i in range(self.dimension):
-            self.temp_maximum.append(self.grid_size)
-            self.temp_current_position.append(current_position[i]+1)
-    
+    def _search_dominant_grid(self, current_position):
+        limit = [self.grid_size] * self.dimension
+        bfs = queue.Queue()
+        start_position = [x + 1 for x in current_position]
+        visited = {}
+        bfs.put(self.generate_key_from_position(start_position))
+        while not bfs.empty():
+            evaluation_key = bfs.get()
+            evaluation_position = list(
+                map(int, re.findall(r'\d+', evaluation_key)))
+            visited[evaluation_key] = True
+            if len(self.grid[evaluation_key]['member']):
+                for dominant_grid in self.dominant_grid:
+                    dominant_index_counter = 0
+                    same_index_counter = 0
+                    dominated_index_counter = 0
+                    dominant_g = list(
+                        map(int, re.findall(r'\d+', dominant_grid)))
+                    for j in range(len(dominant_g)):
+                        if evaluation_position[j] < dominant_g[j]:
+                            dominant_index_counter += 1
+                        elif evaluation_position[j] == dominant_g[j]:
+                            same_index_counter += 1
+                    if dominant_index_counter == self.dimension:
+                        self.dominant_grid.pop(i)
+                    elif dominated_index_counter == self.dimension or same_index_counter == self.dimension:
+                        return
+                self.dominant_grid.append(evaluation_key)
+                dif = 0
+                for ind in range(self.dimension):
+                    if evaluation_position[ind] != start_position[ind]:
+                        dif += 1
+                        if dif > 1:
+                            break
+
+                if dif == 1:
+                    limit[j] = min(evaluation_position[j]+1, limit[j])
+
+            for i in range(self.dimension):
+                next_position = copy.copy(evaluation_position)
+                next_position[i] += 1
+                key = self.generate_key_from_position(next_position)
+                if key not in visited and next_position[i] <= limit[i]:
+                    bfs.put(next_position)
+
     def get_current_sky(self):
         current_sky = []
         events = self.get_all_grid_members()
@@ -176,7 +182,7 @@ class GridIndex:
             else:
                 current_sky.append(event)
         return current_sky
-    
+
     def get_all_grid_members(self):
         members = []
         for grid_key in self.dominant_grid:

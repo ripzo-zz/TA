@@ -4,7 +4,7 @@ import time
 import os, psutil
 from operator import itemgetter
 
-dataset = 'dataset/anti/d/random_50000_2d_ant.csv'
+dataset = 'dataset/independent/d/random_50000_3d_ind.csv'
 # tic = time.perf_counter()
 # naive = Naive(dataset)
 # toc = time.perf_counter()
@@ -13,6 +13,7 @@ dataset = 'dataset/anti/d/random_50000_2d_ant.csv'
 grid_size = 10
 tic = time.perf_counter()
 pre = Precompute(grid_size, dataset)
+print('Precomputing Memory usage: '+str(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)+' mb')
 toc = time.perf_counter()
 print('Time Grid (size = '+str(grid_size)+'): '+str(toc-tic)+' s')
 

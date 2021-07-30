@@ -147,12 +147,6 @@ class GridIndex:
     def get_current_sky(self):
         current_sky = []
         events = self.get_all_grid_members()
-        # events = []
-
-        # for grid_key in self.dominant_grid:
-        #     sky_events = self.get_grid_sky(grid_key)
-        #     for event in sky_events:
-        #         events.append(event)
 
         for event in events:
             if len(current_sky) > 0:

@@ -5,10 +5,10 @@ import os, psutil
 from operator import itemgetter
 
 dataset = 'dataset/independent/n/random_10000_3d_ind.csv'
-tic = time.perf_counter()
-naive = Naive(dataset)
-toc = time.perf_counter()
-print('Time Naive: '+str(toc-tic)+' s')
+# tic = time.perf_counter()
+# naive = Naive(dataset)
+# toc = time.perf_counter()
+# print('Time Naive: '+str(toc-tic)+' s')
 
 grid_size = 10
 tic = time.perf_counter()
@@ -29,17 +29,17 @@ while 1 :
   result1 = pre.get_durable_data(time_start, time_end, thres)
   result1 = sorted(result1, key=itemgetter('id')) 
 
-  result2 = naive.get_durable_data(time_start, time_end, thres)
-  result2 = sorted(result2, key=itemgetter('id')) 
+  # result2 = naive.get_durable_data(time_start, time_end, thres)
+  # result2 = sorted(result2, key=itemgetter('id')) 
 
-  tic = time.perf_counter()
-  for event in result2:
-      print (event)
-  toc = time.perf_counter()
-  print('Time query: '+str(toc-tic)+' s')
-  print('Memory usage: '+str(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)+' mb')
+  # tic = time.perf_counter()
+  # for event in result2:
+  #     print (event)
+  # toc = time.perf_counter()
+  # print('Time query: '+str(toc-tic)+' s')
+  # print('Memory usage: '+str(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)+' mb')
 
-  print('=============')
+  # print('=============')
 
   tic = time.perf_counter()
   print('Memory usage: '+str(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)+' mb')
